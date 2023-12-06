@@ -2,6 +2,7 @@ import axios from 'axios';
 import iziToast from 'izitoast';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+import 'izitoast/dist/css/iziToast.min.css';
 
 const form = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
@@ -13,6 +14,7 @@ const PER_PAGE = 40;
 let currentPage = 1;
 let currentQuery = '';
 
+const lightbox = new SimpleLightbox('.gallery a', {});
 
 loadMoreBtn.style.display = 'none';
 
@@ -38,46 +40,33 @@ const fetchImages = async (query, page) => {
 };
 
 const renderImages = (images) => {
-  gallery.innerHTML = '';
-
-  if (images.length === 0) {
-    iziToast.info({
-      title: 'Info',
-      message: 'Sorry, there are no images matching your search query. Please try again.',
-    });
-    return;
-  }
-
-  images.forEach((image) => {
-    const card = document.createElement('a'); 
-    card.href = image.largeImageURL; 
-    card.classList.add('photo-card');
-
-    const img = document.createElement('img');
-    img.src = image.webformatURL;
-    img.alt = image.tags;
-    img.loading = 'lazy';
-
-    const info = document.createElement('div');
-    info.classList.add('info');
-    info.innerHTML = `
+  const cardsHTML = images.map((image) => {
+    const infoHTML = `
       <p class="info-item"><b>Likes:</b> ${image.likes}</p>
       <p class="info-item"><b>Views:</b> ${image.views}</p>
       <p class="info-item"><b>Comments:</b> ${image.comments}</p>
       <p class="info-item"><b>Downloads:</b> ${image.downloads}</p>
     `;
 
-    card.appendChild(img);
-    card.appendChild(info);
-    gallery.appendChild(card);
-  });
+    return `
+      <a href="${image.largeImageURL}" class="photo-card">
+        <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy">
+        <div class="info">${infoHTML}</div>
+      </a>
+    `;
+  }).join('');
 
-    const lightbox = new SimpleLightbox('.gallery a', {
-      
-  });
-  lightbox.refresh();
+  if (images.length === 0 && currentPage === 1) {
+    gallery.innerHTML = '';
+    iziToast.info({
+      title: 'Info',
+      message: 'Sorry, there are no images matching your search query. Please try again.',
+    });
+  } else {
+    gallery.insertAdjacentHTML('beforeend', cardsHTML);
+    lightbox.refresh();
+  }
 };
-
 
 const searchImages = async (query) => {
   currentQuery = query;
@@ -85,8 +74,6 @@ const searchImages = async (query) => {
 
   const data = await fetchImages(query, currentPage);
   if (data) {
-      gallery.innerHTML = ''; 
-      
     renderImages(data.hits);
     showLoadMoreBtn(data.totalHits);
   }
@@ -107,10 +94,12 @@ const showLoadMoreBtn = (totalHits) => {
     loadMoreBtn.style.display = 'block';
   } else {
     loadMoreBtn.style.display = 'none';
-    iziToast.info({
-      title: 'Info',
-      message: "We're sorry, but you've reached the end of search results.",
-    });
+    if (currentPage === 1 && totalHits > 0) {
+      iziToast.info({
+        title: 'Info',
+        message: "We're sorry, but you've reached the end of search results.",
+      });
+    }
   }
 };
 
@@ -124,4 +113,3 @@ form.addEventListener('submit', async (e) => {
 });
 
 loadMoreBtn.addEventListener('click', loadMoreImages);
-
