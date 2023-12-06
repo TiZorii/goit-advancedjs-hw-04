@@ -56,14 +56,19 @@ const renderImages = (images) => {
     `;
   }).join('');
 
-  if (images.length === 0 && currentPage === 1) {
+  if (currentPage === 1) {
     gallery.innerHTML = '';
+  }
+
+  if (images.length === 0 && currentPage === 1) {
     iziToast.info({
       title: 'Info',
       message: 'Sorry, there are no images matching your search query. Please try again.',
     });
   } else {
     gallery.insertAdjacentHTML('beforeend', cardsHTML);
+   
+   
     lightbox.refresh();
   }
 };
